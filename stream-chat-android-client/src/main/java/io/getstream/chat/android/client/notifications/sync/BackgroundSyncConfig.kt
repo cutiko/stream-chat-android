@@ -1,4 +1,4 @@
-package io.getstream.chat.android.livedata.service.sync
+package io.getstream.chat.android.client.notifications.sync
 
 internal data class BackgroundSyncConfig(
     val apiKey: String,

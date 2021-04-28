@@ -1,4 +1,4 @@
-package io.getstream.chat.android.livedata.service.sync
+package io.getstream.chat.android.client.notifications.sync
 
 import android.content.Context
 import android.content.SharedPreferences

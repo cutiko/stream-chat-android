@@ -1,4 +1,4 @@
-package io.getstream.chat.android.livedata.service.sync
+package io.getstream.chat.android.client.notifications.sync
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -13,7 +13,7 @@ private const val KEY_API_KEY = "api_key"
 private const val KEY_USER_ID = "user_id"
 private const val KEY_USER_TOKEN = "user_token"
 
-internal class EncryptedBackgroundSyncConfigStore(context: Context) {
+public class EncryptedBackgroundSyncConfigStore(context: Context) {
     private val prefs: SharedPreferences
     private val logger = ChatLogger.get("EncryptedBackgroundSyncConfigStore")
 
@@ -38,7 +38,7 @@ internal class EncryptedBackgroundSyncConfigStore(context: Context) {
         }
     }
 
-    fun put(config: BackgroundSyncConfig) {
+    public fun put(config: BackgroundSyncConfig) {
         prefs.edit().apply {
             putString(KEY_API_KEY, config.apiKey)
             putString(KEY_USER_ID, config.userId)
@@ -46,7 +46,7 @@ internal class EncryptedBackgroundSyncConfigStore(context: Context) {
         }.apply()
     }
 
-    fun get(): BackgroundSyncConfig? = prefs.run {
+    public fun get(): BackgroundSyncConfig? = prefs.run {
         val apiKey = getString(KEY_API_KEY, "") ?: ""
         val userId = getString(KEY_USER_ID, "") ?: ""
         val userToken = getString(KEY_USER_TOKEN, "") ?: ""
@@ -55,5 +55,7 @@ internal class EncryptedBackgroundSyncConfigStore(context: Context) {
         return if (config.isValid()) config else { null }
     }
 
-    fun clear() = prefs.edit().clear().apply()
+    public fun clear(): Unit {
+        prefs.edit().clear().apply()
+    }
 }

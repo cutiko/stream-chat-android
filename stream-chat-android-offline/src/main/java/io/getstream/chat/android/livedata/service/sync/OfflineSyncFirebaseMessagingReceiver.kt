@@ -10,6 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import io.getstream.chat.android.client.logger.ChatLogger
+import io.getstream.chat.android.client.notifications.sync.SyncProvider
 
 internal class OfflineSyncFirebaseMessagingReceiver : BroadcastReceiver() {
 

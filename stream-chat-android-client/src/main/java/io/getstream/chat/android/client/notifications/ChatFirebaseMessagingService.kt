@@ -1,35 +1,29 @@
 package io.getstream.chat.android.client.notifications
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.os.Build
-import androidx.core.app.NotificationCompat
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import io.getstream.chat.android.client.ChatClient
 import io.getstream.chat.android.client.logger.ChatLogger
+import io.getstream.chat.android.client.models.User
+import io.getstream.chat.android.client.notifications.handler.ChatNotificationHandler
 import io.getstream.chat.android.client.notifications.handler.NotificationConfig
-import io.getstream.chat.android.core.internal.coroutines.DispatcherProvider
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import io.getstream.chat.android.client.notifications.sync.SyncProvider
 
 internal class ChatFirebaseMessagingService : FirebaseMessagingService() {
     private val logger = ChatLogger.get("ChatFirebaseMessagingService")
     private val defaultNotificationConfig = NotificationConfig()
 
+    private val syncModule by lazy { SyncProvider(this) }
+
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         logger.logD("onMessageReceived(): $remoteMessage")
-        if (!ChatClient.isValidRemoteMessage(remoteMessage, defaultNotificationConfig)) {
-            return
-        }
-        createSyncNotificationChannel()
-        showForegroundNotification(defaultNotificationConfig.smallIcon)
-        GlobalScope.launch(DispatcherProvider.IO) {
-            if (ChatClient.isInitialized) {
-                ChatClient.instance().onMessageReceived(remoteMessage)
-            }
-            stopForeground(true)
-            stopSelf()
+        if (ChatClient.isValidRemoteMessage(remoteMessage, defaultNotificationConfig)) {
+            syncMessageBroadcast(this)
+
+            handleMessageInternally(this, syncModule, remoteMessage)
         }
     }
 
@@ -39,27 +33,41 @@ internal class ChatFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun showForegroundNotification(smallIcon: Int) {
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setAutoCancel(true)
-            .setSmallIcon(smallIcon)
-            .build()
-            .apply {
-                startForeground(NOTIFICATION_ID, this)
-            }
+    private fun syncMessageBroadcast(context: Context) {
+        Intent(ACTION_SYNC_MESSAGES).apply {
+            component = ComponentName(
+                "io.getstream.chat.android.livedata.service.sync",
+                "OfflineSyncFirebaseMessagingReceiver"
+            )
+        }.let(context::sendBroadcast)
     }
 
-    private fun createSyncNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).run {
-                getSystemService(NotificationManager::class.java).createNotificationChannel(this)
-            }
+    private fun handleMessageInternally(context: Context, syncProvider: SyncProvider, message: RemoteMessage) {
+        if (ChatClient.isInitialized) {
+            ChatClient.instance().onMessageReceived(message)
+        } else {
+            val syncConfig = syncProvider.encryptedBackgroundSyncConfigStore.get()
+            syncConfig?.let { config ->
+                val user = User(id = config.userId)
+                val userToken = config.userToken
+
+                initClient(context, user, userToken, config.apiKey)
+            }?.onMessageReceived(message)
         }
     }
 
-    private companion object {
-        private const val CHANNEL_ID = "notification_channel_id"
-        private const val CHANNEL_NAME = "Chat messages sync"
-        private const val NOTIFICATION_ID = 1
+    private fun initClient(context: Context, user: User, userToken: String, apiKey: String, ): ChatClient {
+        val notificationConfig = syncModule.notificationConfigStore.get()
+        val notificationHandler = ChatNotificationHandler(context, notificationConfig)
+
+        return ChatClient.Builder(apiKey, context.applicationContext)
+            .notifications(notificationHandler)
+            .build().apply {
+                setUserWithoutConnecting(user, userToken)
+            }
+    }
+
+    companion object {
+        const val ACTION_SYNC_MESSAGES : String = "ACTION_SYNC_MESSAGES"
     }
 }

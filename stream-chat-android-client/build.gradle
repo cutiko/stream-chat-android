@@ -81,6 +81,7 @@ dependencies {
     debugImplementation Dependencies.flipper
     debugImplementation Dependencies.flipperNetwork
     debugImplementation Dependencies.flipperLoader
+    debugImplementation Dependencies.androidxSecurityCrypto
 
     // Tests
     testImplementation project(':stream-chat-android-test')

@@ -1,4 +1,4 @@
-package io.getstream.chat.android.livedata.service.sync
+package io.getstream.chat.android.client.notifications.sync
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -18,13 +18,13 @@ private const val KEY_NOTIFICATION_CHANNEL_NAME = "key_notification_channel_name
 private const val KEY_SMALL_ICON = "key_small_icon"
 private const val DEFAULT_INT = -1
 
-internal class NotificationConfigStore(context: Context) {
+public class NotificationConfigStore(context: Context) {
     private val prefs: SharedPreferences = context.applicationContext.getSharedPreferences(
         NOTIFICATION_CONFIG_PREFS_NAME,
         Context.MODE_PRIVATE
     )
 
-    fun put(config: NotificationConfig) {
+    public fun put(config: NotificationConfig) {
         prefs.edit().apply {
             putInt(KEY_ERROR_CONTENT, config.errorCaseNotificationContent)
             putInt(KEY_ERROR_TITLE, config.errorCaseNotificationTitle)
@@ -37,7 +37,7 @@ internal class NotificationConfigStore(context: Context) {
         }.apply()
     }
 
-    fun get(): NotificationConfig {
+    public fun get(): NotificationConfig {
         val errorContentResId = prefs.getInt(KEY_ERROR_CONTENT, DEFAULT_INT)
         val errorCaseTitleResId = prefs.getInt(KEY_ERROR_TITLE, DEFAULT_INT)
         val notificationChannelIdResId = prefs.getInt(KEY_NOTIFICATION_CHANNEL_ID, DEFAULT_INT)
@@ -63,10 +63,12 @@ internal class NotificationConfigStore(context: Context) {
         )
     }
 
-    fun clear() = prefs.edit().clear().apply()
+    public fun clear() {
+        prefs.edit().clear().apply()
+    }
 
-    companion object {
-        val NotificationConfigUnavailable: NotificationConfig = NotificationConfig(
+    public companion object {
+        public val NotificationConfigUnavailable: NotificationConfig = NotificationConfig(
             DEFAULT_INT,
             DEFAULT_INT,
             DEFAULT_INT,
